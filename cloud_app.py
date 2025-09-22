@@ -225,13 +225,18 @@ async def health_check():
 
 # === MAIN ===
 if __name__ == "__main__":
+    import os
+    
+    # ใช้ port จาก environment variable หรือ default 8000
+    port = int(os.environ.get("PORT", 8000))
+    
     print("🚀 เริ่มต้น Shrimp Farm Cloud Controller...")
-    print("📡 API จะรันที่: http://0.0.0.0:8000")
-    print("📖 ดู API docs ที่: http://0.0.0.0:8000/docs")
+    print(f"📡 API จะรันที่: http://0.0.0.0:{port}")
+    print(f"📖 ดู API docs ที่: http://0.0.0.0:{port}/docs")
     
     uvicorn.run(
         "cloud_app:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True
+        port=port,
+        reload=False  # ปิด reload ใน production
     )
