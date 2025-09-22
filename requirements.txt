@@ -1,16 +1,8 @@
-# === CLOUD APP DEPENDENCIES ===
+# === CLOUD APP DEPENDENCIES ONLY ===
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 python-multipart==0.0.6
-
-# === RASPBERRY PI DEPENDENCIES ===
-opencv-python==4.8.1.78
-requests==2.31.0
-RPi.GPIO==0.7.1
-adafruit-circuitpython-ads1x15==2.2.11
-adafruit-circuitpython-busdevice==5.3.1
-w1thermsensor==2.0.0
 
 # === OPTIONAL FOR DEVELOPMENT ===
 python-dotenv==1.0.0

@@ -35,9 +35,9 @@
    CLOUD_API_URL = "https://your-app.railway.app"  # เปลี่ยนเป็น URL จริง
    ```
 
-2. ติดตั้ง dependencies:
+2. ติดตั้ง dependencies สำหรับ Raspberry Pi:
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-pi.txt
    ```
 
 3. รัน controller.py:
