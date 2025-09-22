@@ -1,0 +1,139 @@
+# === PYTHON ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# === VIRTUAL ENVIRONMENT ===
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# === IDE & EDITORS ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# === LOGS ===
+*.log
+logs/
+log/
+/tmp/controller_debug.log
+
+# === MEDIA FILES ===
+*.mp4
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.avi
+*.mov
+videos/
+images/
+media/
+
+# === DATA FILES ===
+*.json
+data/
+sensor_data.json
+sensor_batch_*.json
+sensor_batches.json
+sensor_readings.json
+ponds.json
+users.json
+push_subscriptions.json
+push_notification_settings.json
+log_files.json
+media_assets.json
+
+# === CONFIG FILES ===
+config.env
+.env
+.env.local
+.env.production
+.env.staging
+vapid_keys.json
+
+# === RUNTIME ===
+*.pid
+*.seed
+*.pid.lock
+
+# === COVERAGE ===
+.coverage
+.pytest_cache/
+htmlcov/
+
+# === JUPYTER NOTEBOOK ===
+.ipynb_checkpoints
+
+# === PYCHARM ===
+.idea/
+
+# === VS CODE ===
+.vscode/
+
+# === MACOS ===
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# === WINDOWS ===
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === LINUX ===
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# === PROJECT SPECIFIC ===
+# ไฟล์ที่สร้างจาก Raspberry Pi
+/home/rwb/depa/
+depa/
+*.mp4
+*.jpg
+
+# ไฟล์ log จาก controller
+controller_debug.log
+
+# ไฟล์ config ที่มี sensitive data
+config.env
+vapid_keys.json
+
+# ไฟล์ data ที่ถูกสร้างอัตโนมัติ
+data/
+*.json
+
+# ไฟล์ media ที่ถูกสร้างจากกล้อง
+media/
+videos/
+images/
