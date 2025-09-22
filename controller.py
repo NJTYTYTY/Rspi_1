@@ -15,7 +15,7 @@ INB = 24
 LOG_PATH = "/tmp/controller_debug.log"
 
 # 👉 เปลี่ยนเป็น URL ของ cloud app ที่ deploy บน Railway
-CLOUD_API_URL = "https://your-railway-app.railway.app"  # เปลี่ยนเป็น URL จริง
+CLOUD_API_URL = "https://rspi1-production.up.railway.app"  # เปลี่ยนเป็น URL จริง
 JOB_CHECK_INTERVAL = 10  # ตรวจสอบงานทุก 10 วินาที
 
 # 👉 ใส่ ngrok URL ของ backend main.py (port 8000) สำหรับส่งไฟล์
