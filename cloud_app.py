@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 import uvicorn
@@ -7,6 +8,15 @@ import json
 import os
 
 app = FastAPI(title="Shrimp Farm Cloud Controller", version="1.0.0")
+
+# === CORS CONFIGURATION ===
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ใน production ควรระบุ domain ที่เฉพาะเจาะจง
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # === DATA MODELS ===
 class LiftCommand(BaseModel):
@@ -83,7 +93,7 @@ async def create_lift_command(command: LiftCommand):
         print(f"❌ Error ในการรับคำสั่ง: {e}")
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")
 
-@app.post("/lift-up")
+@app.post("/api/lift-up")
 async def create_lift_up_command(command: LiftUpCommand):
     """Frontend ส่งคำสั่งยกยอขึ้นมา"""
     try:
@@ -120,7 +130,7 @@ async def create_lift_up_command(command: LiftUpCommand):
         print(f"❌ Error ในการรับคำสั่งยกยอขึ้น: {e}")
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")
 
-@app.post("/lift-down")
+@app.post("/api/lift-down")
 async def create_lift_down_command(command: LiftDownCommand):
     """Frontend ส่งคำสั่งยกยอลงมา"""
     try:
@@ -227,8 +237,8 @@ async def health_check():
 if __name__ == "__main__":
     import os
     
-    # ใช้ port จาก environment variable หรือ default 8000
-    port = int(os.environ.get("PORT", 8000))
+    # ใช้ port จาก environment variable หรือ default 3002
+    port = int(os.environ.get("PORT", 3002))
     
     print("🚀 เริ่มต้น Shrimp Farm Cloud Controller...")
     print(f"📡 API จะรันที่: http://0.0.0.0:{port}")
