@@ -14,7 +14,7 @@ DO_MAX = 20.0
 PH_M = 3.4091
 PH_C = 0.182
 JSON_FILE = "/tmp/sensor_data.json"
-SERVER_URL = "http://192.168.1.102:8000/data"  # เปลี่ยนเป็น ngrok ของ backend
+SERVER_URL = "https://railwayreal555-production-5be4.up.railway.app/data"  # เปลี่ยนเป็น ngrok ของ backend
 POND_ID = 1   # <<< ตั้งค่า pond_id ของบ่อที่อ่านค่า
 
 # === INIT SENSORS ===

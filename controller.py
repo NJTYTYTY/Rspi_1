@@ -19,7 +19,7 @@ CLOUD_API_URL = "https://rspi1-production.up.railway.app"  # เปลี่ย�
 JOB_CHECK_INTERVAL = 10  # ตรวจสอบงานทุก 10 วินาที
 
 # 👉 ใส่ ngrok URL ของ backend main.py (port 8000) สำหรับส่งไฟล์
-BACKEND_URL = "https://7dd73855e55a.ngrok-free.app/process"
+BACKEND_URL = "https://railwayreal555-production-5be4.up.railway.app/process"
 
 # === LOG FUNCTION ===
 def log(msg):
