@@ -12,11 +12,12 @@ LIMIT_SWITCH_PIN = 18
 PWM = 12
 INA = 23
 INB = 24
+relay_pin = 26
 LOG_PATH = "/tmp/controller_debug.log"
 
 # 👉 เปลี่ยนเป็น URL ของ cloud app ที่ deploy บน Railway
 CLOUD_API_URL = "https://rspi1-production.up.railway.app"  # เปลี่ยนเป็น URL จริง
-JOB_CHECK_INTERVAL = 10  # ตรวจสอบงานทุก 10 วินาที
+JOB_CHECK_INTERVAL = 3  # ตรวจสอบงานทุก 10 วินาที
 
 # 👉 ใส่ ngrok URL ของ backend main.py (port 8000) สำหรับส่งไฟล์
 BACKEND_URL = "https://railwayreal555-production-5be4.up.railway.app/process"
@@ -35,6 +36,7 @@ GPIO.setup(LIMIT_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(PWM, GPIO.OUT)
 GPIO.setup(INA, GPIO.OUT)
 GPIO.setup(INB, GPIO.OUT)
+GPIO.setup(relay_pin, GPIO.OUT)
 DISTANCE_LIMIT = 30.0  # cm (ตั้งตามที่ต้องการ)
 
 import board
@@ -47,12 +49,12 @@ ads = ADS.ADS1115(i2c)
 channel = AnalogIn(ads, ADS.P0)
 
 # === MOTOR CONTROL FUNCTIONS ===
-def pull_up():
+def pull_down():
     GPIO.output(PWM, 10)
     GPIO.output(INA, GPIO.HIGH)
     GPIO.output(INB, GPIO.LOW)
 
-def pull_down():
+def pull_up():
     GPIO.output(PWM, 10)
     GPIO.output(INA, GPIO.LOW)
     GPIO.output(INB, GPIO.HIGH)
@@ -61,16 +63,14 @@ def stop_motor():
     GPIO.output(PWM, 0)
     GPIO.output(INA, GPIO.HIGH)
     GPIO.output(INB, GPIO.LOW)
-
+        
 def wait_for_press():
     close_start = None
     while True:
-        distance = channel.voltage / 3.262 * 100
-        if distance <= DISTANCE_LIMIT:
+        if channel.voltage <= 0:
             if close_start is None:
                 close_start = time.time()
-            elif time.time() - close_start >= 0.2:
-                log(f"📏 ระยะ {distance:.2f} cm <= {DISTANCE_LIMIT} cm → เจอวัตถุใกล้นานเกิน 1 วินาที หยุด")
+            elif time.time() - close_start >= 0.1:
                 break
         else:
             close_start = None
@@ -131,7 +131,6 @@ def execute_lift_job(job_data=None):
             log("⬆️ ยกยอขึ้น")
             start_up_time = time.time()
             pull_up()
-            log("🕹️ รอปุ่มกด (limit switch)")
             wait_for_press()
             stop_motor()
             time.sleep(3)
@@ -139,8 +138,9 @@ def execute_lift_job(job_data=None):
             log(f"✅ ยกยอขึ้นเสร็จ (ใช้เวลา {duration_up:.2f} วินาที)")
 
             # === ถ่ายรูป ===
+            GPIO.output(relay_pin, GPIO.LOW)
             log("📷 เตรียมกล้อง...")
-            cap = cv2.VideoCapture(0)
+            cap = cv2.VideoCapture(1)
             if not cap.isOpened():
                 log("❌ ไม่สามารถเปิดกล้องได้")
                 raise RuntimeError("เปิดกล้องไม่ได้")
@@ -182,6 +182,7 @@ def execute_lift_job(job_data=None):
 
             out.release()
             cap.release()
+            GPIO.output(relay_pin, GPIO.HIGH)
 
             # === ส่งไฟล์ไป backend ===
             result_data = {

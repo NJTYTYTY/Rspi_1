@@ -14,12 +14,12 @@ GPIO.setup(PWM, GPIO.OUT)
 GPIO.setup(INA, GPIO.OUT)
 GPIO.setup(INB, GPIO.OUT)
 
-def pull_up():
+def pull_down():
     GPIO.output(PWM, 10)
     GPIO.output(INA, GPIO.HIGH)
     GPIO.output(INB, GPIO.LOW)
 
-def pull_down():
+def pull_up():
     GPIO.output(PWM, 10)
     GPIO.output(INA, GPIO.LOW)
     GPIO.output(INB, GPIO.HIGH)
@@ -30,7 +30,7 @@ def stop_motor():
     GPIO.output(INB, GPIO.LOW)
     
 pull_up()
-time.sleep(4)
+time.sleep(1)
 stop_motor()
 #time.sleep(5)
 #pull_down()
