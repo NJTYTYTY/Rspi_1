@@ -8,6 +8,7 @@ PWM = 12
 INA = 23
 INB = 24
 
+
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
 GPIO.setup(PWM, GPIO.OUT)
