@@ -1,8 +1,3 @@
-# === CLOUD APP DEPENDENCIES ONLY ===
-fastapi==0.115.6
-uvicorn[standard]==0.32.1
-pydantic==2.10.4
-python-multipart==0.0.12
-
-# === OPTIONAL FOR DEVELOPMENT ===
-python-dotenv==1.0.1
+opencv-python==4.8.1.78
+requests==2.31.0
+RPi.GPIO==0.7.1

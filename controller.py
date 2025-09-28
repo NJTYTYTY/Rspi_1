@@ -248,50 +248,14 @@ def execute_lift_job(job_data=None):
         }
 
 # === HEARTBEAT FUNCTION ===
-def send_heartbeat():
-    """ส่งสัญญาณ heartbeat ไปยังเซิร์ฟเวอร์ทุก 5 วินาที"""
-    try:
-        heartbeat_data = {
-            "device_id": f"raspi_pond_{POND_ID}",
-            "status": "online",
-            "timestamp": datetime.now().isoformat(),
-            "pond_id": POND_ID
-        }
-        
-        url = "https://railwayreal555-production-5be4.up.railway.app/heartbeat"
-        log(f"🌐 Sending heartbeat to: {url}")
-        log(f"📤 Data: {heartbeat_data}")
-        
-        response = requests.post(
-            url,
-            json=heartbeat_data,
-            timeout=10
-        )
-        
-        log(f"📥 Response status: {response.status_code}")
-        log(f"📥 Response text: {response.text}")
-        
-        if response.status_code == 200:
-            log("💓 Heartbeat ส่งสำเร็จ")
-            return True
-        else:
-            log(f"❌ Heartbeat ล้มเหลว: {response.status_code} - {response.text}")
-            return False
-            
-    except Exception as e:
-        log(f"⚠️ Heartbeat Error: {e}")
-        log(f"⚠️ Error type: {type(e).__name__}")
-        return False
+# Heartbeat ถูกย้ายไปไฟล์ heartbeat.py แยกต่างหาก
 
 # === MAIN LOOP ===
 def main():
     log("🔌 เริ่มโปรแกรม controller.py (Cloud Mode)")
     log(f"🌐 Cloud API: {CLOUD_API_URL}")
     log(f"🔄 ตรวจสอบงานทุก {JOB_CHECK_INTERVAL} วินาที")
-    log(f"💓 ส่ง Heartbeat ทุก 5 วินาที")
-    
-    # ตัวนับสำหรับ heartbeat
-    heartbeat_counter = 0
+    log("💓 Heartbeat ทำงานแยกในไฟล์ heartbeat.py")
     
     try:
         while True:
@@ -310,12 +274,6 @@ def main():
                 log("✅ งานเสร็จสิ้น รองานใหม่...")
             else:
                 log("😴 ไม่มีงาน รอ...")
-            
-            # ส่ง Heartbeat ทุก 5 วินาที
-            heartbeat_counter += JOB_CHECK_INTERVAL
-            if heartbeat_counter >= 5:
-                send_heartbeat()
-                heartbeat_counter = 0
             
             # รอก่อนตรวจสอบครั้งต่อไป
             time.sleep(JOB_CHECK_INTERVAL)
