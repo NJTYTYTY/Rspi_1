@@ -258,21 +258,29 @@ def send_heartbeat():
             "pond_id": POND_ID
         }
         
+        url = "https://railwayreal555-production-5be4.up.railway.app/heartbeat"
+        log(f"🌐 Sending heartbeat to: {url}")
+        log(f"📤 Data: {heartbeat_data}")
+        
         response = requests.post(
-            "https://railwayreal555-production-5be4.up.railway.app/heart",
+            url,
             json=heartbeat_data,
             timeout=10
         )
+        
+        log(f"📥 Response status: {response.status_code}")
+        log(f"📥 Response text: {response.text}")
         
         if response.status_code == 200:
             log("💓 Heartbeat ส่งสำเร็จ")
             return True
         else:
-            log(f"❌ Heartbeat ล้มเหลว: {response.status_code}")
+            log(f"❌ Heartbeat ล้มเหลว: {response.status_code} - {response.text}")
             return False
             
     except Exception as e:
         log(f"⚠️ Heartbeat Error: {e}")
+        log(f"⚠️ Error type: {type(e).__name__}")
         return False
 
 # === MAIN LOOP ===
