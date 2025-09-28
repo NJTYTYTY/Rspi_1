@@ -120,271 +120,123 @@ def execute_lift_job(job_data=None):
     """ทำงานยกเชือกและถ่ายรูป"""
     log("🔧 เริ่มทำงานยกเชือก...")
     
-    # ตรวจสอบ action จาก job_data
-    action = "lift"  # default
-    if job_data and "action" in job_data:
-        action = job_data["action"]
-    
-    log(f"📋 Action: {action}")
-    
     try:
-        if action == "lift_up":
-            # === ยกยอขึ้น + ถ่ายรูป ===
-            log("⬆️ ยกยอขึ้น")
-            start_up_time = time.time()
-            pull_up()
-            wait_for_press()
-            stop_motor()
-            time.sleep(3)
+        # === ยกยอขึ้น + ถ่ายรูป ===
+        log("⬆️ ยกยอขึ้น")
+        start_up_time = time.time()
+        pull_up()
+        wait_for_press()
+        stop_motor()
+        time.sleep(3)
 
-            duration_up = time.time() - start_up_time
-            log(f"✅ ยกยอขึ้นเสร็จ (ใช้เวลา {duration_up:.2f} วินาที)")
+        duration_up = time.time() - start_up_time
+        log(f"✅ ยกยอขึ้นเสร็จ (ใช้เวลา {duration_up:.2f} วินาที)")
 
-            # === ถ่ายรูป ===
-            GPIO.output(relay_pin, GPIO.LOW)
-            time.sleep(3)
-            log("📷 เตรียมกล้อง...")
+        # === ถ่ายรูป ===
+        GPIO.output(relay_pin, GPIO.LOW)
+        time.sleep(3)
+        log("📷 เตรียมกล้อง...")
 
-            cap = open_camera([0, 1, 2])
-            time.sleep(2)
+        cap = open_camera([0, 1, 2])
+        time.sleep(2)
 
-            if not cap.isOpened():
-                log("❌ ไม่สามารถเปิดกล้องได้")
-                raise RuntimeError("เปิดกล้องไม่ได้")
+        if not cap.isOpened():
+            log("❌ ไม่สามารถเปิดกล้องได้")
+            raise RuntimeError("เปิดกล้องไม่ได้")
 
-            frame_width = int(cap.get(3))
-            frame_height = int(cap.get(4))
-            fps = 20.0
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        frame_width = int(cap.get(3))
+        frame_height = int(cap.get(4))
+        fps = 20.0
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-            video_filename = f"video_pond{POND_ID}_{timestamp}.mp4"
-            image_filename = f"shrimp_pond{POND_ID}_{timestamp}.jpg"
-            video_path = os.path.join("/home/rwb/depa", video_filename)
-            image_path = os.path.join("/home/rwb/depa", image_filename)
+        video_filename = f"video_pond{POND_ID}_{timestamp}.mp4"
+        image_filename = f"shrimp_pond{POND_ID}_{timestamp}.jpg"
+        video_path = os.path.join("/home/rwb/depa", video_filename)
+        image_path = os.path.join("/home/rwb/depa", image_filename)
 
-            os.makedirs(os.path.dirname(video_path), exist_ok=True)
+        os.makedirs(os.path.dirname(video_path), exist_ok=True)
 
-            log("🎥 เริ่มถ่ายวิดีโอ")
-            out = cv2.VideoWriter(
-                video_path,
-                cv2.VideoWriter_fourcc(*'mp4v'),
-                fps,
-                (frame_width, frame_height)
-            )
+        log("🎥 เริ่มถ่ายวิดีโอ")
+        out = cv2.VideoWriter(
+            video_path,
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            fps,
+            (frame_width, frame_height)
+        )
 
-            start_time = time.time()
-            captured_image = None
+        start_time = time.time()
+        captured_image = None
 
-            stop_motor()
+        stop_motor()
 
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    log("❌ ไม่สามารถอ่านภาพจากกล้องได้")
-                    break
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                log("❌ ไม่สามารถอ่านภาพจากกล้องได้")
+                break
 
-                out.write(frame)
+            out.write(frame)
 
-                # Capture still image at 2.5s
-                if captured_image is None and time.time() - start_time > 2.5:
-                    captured_image = frame.copy()
-                    cv2.imwrite(image_path, captured_image)
-                    log(f"📸 ถ่ายภาพนิ่งแล้ว → {image_path}")
+            # Capture still image at 2.5s
+            if captured_image is None and time.time() - start_time > 2.5:
+                captured_image = frame.copy()
+                cv2.imwrite(image_path, captured_image)
+                log(f"📸 ถ่ายภาพนิ่งแล้ว → {image_path}")
 
-                # Stop recording after 5s
-                if time.time() - start_time > 5:
-                    log("⏱️ ครบ 5 วินาที หยุดถ่าย")
-                    break
+            # Stop recording after 5s
+            if time.time() - start_time > 5:
+                log("⏱️ ครบ 5 วินาที หยุดถ่าย")
+                break
 
-            out.release()
-            cap.release()
+        out.release()
+        cap.release()
 
-            GPIO.output(relay_pin, GPIO.HIGH)
+        GPIO.output(relay_pin, GPIO.HIGH)
 
-            # === ยกยอลงเท่านั้น (ไม่ถ่ายรูป) ===
-            log("⬇️ ยกยอลง")
-            pull_down()
-            time.sleep(10)  # ยกลง 10 วินาที
-            stop_motor()
-            log("✅hihihi")
+        # === ยกยอลง ===
+        log("⬇️ ยกยอลง")
+        pull_down()
+        time.sleep(10)  # ยกลง 10 วินาที
+        stop_motor()
+        log("✅ ยกยอลงเสร็จ")
 
-            # === ส่งไฟล์ไป backend ===
-            result_data = {
-                "status": "success",
-                "pond_id": POND_ID,
-                "action": action,
-                "timestamp": timestamp,
-                "files": {
-                    "image": image_filename,
-                    "video": video_filename
-                }
+        # === ส่งไฟล์ไป backend ===
+        result_data = {
+            "status": "success",
+            "pond_id": POND_ID,
+            "action": "lift_up",
+            "timestamp": timestamp,
+            "files": {
+                "image": image_filename,
+                "video": video_filename
             }
+        }
 
-            if captured_image is not None:
-                log("📤 กำลังส่งภาพและวิดีโอไปยังเซิร์ฟเวอร์...")
-                try:
-                    with open(image_path, "rb") as img_f, open(video_path, "rb") as vid_f:
-                        files = [
-                            ("files", (image_filename, img_f, "image/jpeg")),
-                            ("files", (video_filename, vid_f, "video/mp4"))
-                        ]
-                        response = requests.post(BACKEND_URL, files=files)
+        if captured_image is not None:
+            log("📤 กำลังส่งภาพและวิดีโอไปยังเซิร์ฟเวอร์...")
+            try:
+                with open(image_path, "rb") as img_f, open(video_path, "rb") as vid_f:
+                    files = [
+                        ("files", (image_filename, img_f, "image/jpeg")),
+                        ("files", (video_filename, vid_f, "video/mp4"))
+                    ]
+                    response = requests.post(BACKEND_URL, files=files)
 
-                        if response.status_code == 200:
-                            log("✅ ส่งข้อมูลสำเร็จ")
-                            result_data["backend_response"] = response.json()
-                        else:
-                            log(f"❌ ส่งข้อมูลล้มเหลว: {response.status_code} - {response.text}")
-                            result_data["backend_error"] = f"{response.status_code} - {response.text}"
+                    if response.status_code == 200:
+                        log("✅ ส่งข้อมูลสำเร็จ")
+                        result_data["backend_response"] = response.json()
+                    else:
+                        log(f"❌ ส่งข้อมูลล้มเหลว: {response.status_code} - {response.text}")
+                        result_data["backend_error"] = f"{response.status_code} - {response.text}"
 
-                except Exception as e:
-                    log(f"⚠️ เกิดข้อผิดพลาดในการส่งข้อมูล: {e}")
-                    result_data["backend_error"] = str(e)
-            else:
-                log("⚠️ ไม่มีภาพนิ่งจะส่ง")
-                result_data["backend_error"] = "ไม่มีภาพนิ่งจะส่ง"
-
-            return result_data
-
-
-            
-        elif action == "lift_down":
-            # === ยกยอลงเท่านั้น (ไม่ถ่ายรูป) ===
-            #log("⬇️ ยกยอลง")
-            #start_down_time = time.time()
-            #pull_down()
-            #time.sleep(5)  # ยกลง 5 วินาที
-            #stop_motor()
-            #duration_down = time.time() - start_down_time
-            #log(f"✅ ยกยอลงเสร็จ (ใช้เวลา {duration_down:.2f} วินาที)")
-            
-            #return {
-            #    "status": "success",
-            #    "pond_id": POND_ID,
-            #    "action": action,
-            #    "duration": duration_down,
-            #    "timestamp": datetime.now().isoformat()
-            #}
-            
-            return {
-                "status": "success",
-                "pond_id": 1,
-                "action": 1,
-                "duration": 1,
-                "timestamp": 1
-            }
-            
+            except Exception as e:
+                log(f"⚠️ เกิดข้อผิดพลาดในการส่งข้อมูล: {e}")
+                result_data["backend_error"] = str(e)
         else:
-            # === ยกเชือกแบบเดิม (lift) ===
-            log("➡️ ดึงมอเตอร์ขึ้น")
-            start_up_time = time.time()
-            pull_up()
-            log("🕹️ รอปุ่มกด (limit switch)")
-            wait_for_press()
-            stop_motor()
-            time.sleep(3)
-            duration_up = time.time() - start_up_time
-            pull_down()
-            time.sleep(duration_up)
-            stop_motor()
-            log(f"✅ กดปุ่มแล้ว หยุดดึงขึ้น (ใช้เวลา {duration_up:.2f} วินาที)")
+            log("⚠️ ไม่มีภาพนิ่งจะส่ง")
+            result_data["backend_error"] = "ไม่มีภาพนิ่งจะส่ง"
 
-        # === ถ่ายรูป (เฉพาะ action = "lift") ===
-        if action == "lift":
-            log("📷 เตรียมกล้อง...")
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                log("❌ ไม่สามารถเปิดกล้องได้")
-                raise RuntimeError("เปิดกล้องไม่ได้")
-
-            frame_width = int(cap.get(3))
-            frame_height = int(cap.get(4))
-            fps = 20.0
-
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            video_filename = f"video_pond{POND_ID}_{timestamp}.mp4"
-            image_filename = f"shrimp_pond{POND_ID}_{timestamp}.jpg"
-
-            video_path = os.path.join("/home/rwb/depa", video_filename)
-            image_path = os.path.join("/home/rwb/depa", image_filename)
-            os.makedirs(os.path.dirname(video_path), exist_ok=True)
-
-            log("🎥 เริ่มถ่ายวิดีโอ")
-            out = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_width, frame_height))
-            start_time = time.time()
-            captured_image = None
-            stop_motor()
-
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    log("❌ ไม่สามารถอ่านภาพจากกล้องได้")
-                    break
-
-                out.write(frame)
-
-                if captured_image is None and time.time() - start_time > 2.5:
-                    captured_image = frame.copy()
-                    cv2.imwrite(image_path, captured_image)
-                    log(f"📸 ถ่ายภาพนิ่งแล้ว → {image_path}")
-
-                if time.time() - start_time > 5:
-                    log("⏱️ ครบ 5 วินาที หยุดถ่าย")
-                    break
-
-            out.release()
-            cap.release()
-
-            # === ส่งไฟล์ไป backend ===
-            result_data = {
-                "status": "success",
-                "pond_id": POND_ID,
-                "action": action,
-                "timestamp": timestamp,
-                "files": {
-                    "image": image_filename,
-                    "video": video_filename
-                }
-            }
-
-            if captured_image is not None:
-                log("📤 กำลังส่งภาพและวิดีโอไปยังเซิร์ฟเวอร์...")
-                try:
-                    with open(image_path, "rb") as img_f, open(video_path, "rb") as vid_f:
-                        files = [
-                            ("files", (image_filename, img_f, "image/jpeg")),
-                            ("files", (video_filename, vid_f, "video/mp4"))
-                        ]
-                        response = requests.post(BACKEND_URL, files=files)
-                        if response.status_code == 200:
-                            log("✅ ส่งข้อมูลสำเร็จ")
-                            result_data["backend_response"] = response.json()
-                        else:
-                            log(f"❌ ส่งข้อมูลล้มเหลว: {response.status_code} - {response.text}")
-                            result_data["backend_error"] = f"{response.status_code} - {response.text}"
-                except Exception as e:
-                    log(f"⚠️ เกิดข้อผิดพลาดในการส่งข้อมูล: {e}")
-                    result_data["backend_error"] = str(e)
-            else:
-                log("⚠️ ไม่มีภาพนิ่งจะส่ง")
-                result_data["backend_error"] = "ไม่มีภาพนิ่งจะส่ง"
-
-            # === หมุนมอเตอร์ลง ===
-            log("🔄 หมุนมอเตอร์ลง")
-            pull_down()
-            time.sleep(duration_up)
-            stop_motor()
-            log("✅ หมุนมอเตอร์ลงเสร็จแล้ว")
-
-            return result_data
-        else:
-            # สำหรับ lift_up และ lift_down ไม่ต้องถ่ายรูป
-            return {
-                "status": "success",
-                "pond_id": POND_ID,
-                "action": action,
-                "timestamp": datetime.now().isoformat()
-            }
+        return result_data
 
     except Exception as e:
         log(f"🔥 ERROR ในการทำงาน: {e}")
@@ -395,11 +247,43 @@ def execute_lift_job(job_data=None):
             "timestamp": datetime.now().isoformat()
         }
 
+# === HEARTBEAT FUNCTION ===
+def send_heartbeat():
+    """ส่งสัญญาณ heartbeat ไปยังเซิร์ฟเวอร์ทุก 5 วินาที"""
+    try:
+        heartbeat_data = {
+            "device_id": f"raspi_pond_{POND_ID}",
+            "status": "online",
+            "timestamp": datetime.now().isoformat(),
+            "pond_id": POND_ID
+        }
+        
+        response = requests.post(
+            f"{CLOUD_API_URL}/heartbeat",
+            json=heartbeat_data,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            log("💓 Heartbeat ส่งสำเร็จ")
+            return True
+        else:
+            log(f"❌ Heartbeat ล้มเหลว: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        log(f"⚠️ Heartbeat Error: {e}")
+        return False
+
 # === MAIN LOOP ===
 def main():
     log("🔌 เริ่มโปรแกรม controller.py (Cloud Mode)")
     log(f"🌐 Cloud API: {CLOUD_API_URL}")
     log(f"🔄 ตรวจสอบงานทุก {JOB_CHECK_INTERVAL} วินาที")
+    log(f"💓 ส่ง Heartbeat ทุก 5 วินาที")
+    
+    # ตัวนับสำหรับ heartbeat
+    heartbeat_counter = 0
     
     try:
         while True:
@@ -418,6 +302,12 @@ def main():
                 log("✅ งานเสร็จสิ้น รองานใหม่...")
             else:
                 log("😴 ไม่มีงาน รอ...")
+            
+            # ส่ง Heartbeat ทุก 5 วินาที
+            heartbeat_counter += JOB_CHECK_INTERVAL
+            if heartbeat_counter >= 5:
+                send_heartbeat()
+                heartbeat_counter = 0
             
             # รอก่อนตรวจสอบครั้งต่อไป
             time.sleep(JOB_CHECK_INTERVAL)
