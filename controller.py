@@ -259,7 +259,7 @@ def send_heartbeat():
         }
         
         response = requests.post(
-            f"{CLOUD_API_URL}/heartbeat",
+            "https://railwayreal555-production-5be4.up.railway.app/heart",
             json=heartbeat_data,
             timeout=10
         )
@@ -322,3 +322,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
