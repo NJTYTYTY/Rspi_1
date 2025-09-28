@@ -30,8 +30,8 @@ def stop_motor():
     GPIO.output(INA, GPIO.HIGH)
     GPIO.output(INB, GPIO.LOW)
     
-pull_up()
-time.sleep(1)
+pull_down()
+time.sleep(5)
 stop_motor()
 #time.sleep(5)
 #pull_down()

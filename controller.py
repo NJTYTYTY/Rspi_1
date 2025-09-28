@@ -8,7 +8,7 @@ import RPi.GPIO as GPIO
 
 # === CONFIG ===
 POND_ID = 1  # <<< ตั้งค่าหมายเลขบ่อ
-LIMIT_SWITCH_PIN = 18
+LIMIT_SWITCH_PIN = 17
 PWM = 12
 INA = 23
 INB = 24
@@ -17,7 +17,7 @@ LOG_PATH = "/tmp/controller_debug.log"
 
 # 👉 เปลี่ยนเป็น URL ของ cloud app ที่ deploy บน Railway
 CLOUD_API_URL = "https://rspi1-production.up.railway.app"  # เปลี่ยนเป็น URL จริง
-JOB_CHECK_INTERVAL = 3  # ตรวจสอบงานทุก 10 วินาที
+JOB_CHECK_INTERVAL = 2  # ตรวจสอบงานทุก 10 วินาที
 
 # 👉 ใส่ ngrok URL ของ backend main.py (port 8000) สำหรับส่งไฟล์
 BACKEND_URL = "https://railwayreal555-production-5be4.up.railway.app/process"
@@ -32,21 +32,12 @@ def log(msg):
 # === SETUP GPIO ===
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)
-GPIO.setup(LIMIT_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(LIMIT_SWITCH_PIN, GPIO.IN)
 GPIO.setup(PWM, GPIO.OUT)
 GPIO.setup(INA, GPIO.OUT)
 GPIO.setup(INB, GPIO.OUT)
 GPIO.setup(relay_pin, GPIO.OUT)
-DISTANCE_LIMIT = 30.0  # cm (ตั้งตามที่ต้องการ)
-
-import board
-import busio
-import adafruit_ads1x15.ads1115 as ADS
-from adafruit_ads1x15.analog_in import AnalogIn
-
-i2c = busio.I2C(board.SCL, board.SDA)
-ads = ADS.ADS1115(i2c)
-channel = AnalogIn(ads, ADS.P0)
+GPIO.output(relay_pin, GPIO.HIGH)
 
 # === MOTOR CONTROL FUNCTIONS ===
 def pull_down():
@@ -65,15 +56,9 @@ def stop_motor():
     GPIO.output(INB, GPIO.LOW)
         
 def wait_for_press():
-    close_start = None
     while True:
-        if channel.voltage <= 0:
-            if close_start is None:
-                close_start = time.time()
-            elif time.time() - close_start >= 0.1:
-                break
-        else:
-            close_start = None
+        if GPIO.input(LIMIT_SWITCH_PIN) == 0:
+            break
         time.sleep(0.1)
 
 def wait_for_release():
@@ -113,6 +98,23 @@ def complete_job(result_data):
         log(f"⚠️ ไม่สามารถแจ้งงานเสร็จ: {e}")
         return False
 
+def open_camera(camera_indices=[0, 1, 2]):
+    """ลองเปิดกล้องตาม index ที่ส่งมา เลือกกล้องแรกที่อ่าน frame ได้"""
+    for idx in camera_indices:
+        cap = cv2.VideoCapture(idx, cv2.CAP_V4L2)
+        time.sleep(2)  # รอให้กล้องพร้อม
+
+        if cap.isOpened():
+            ret, frame = cap.read()
+            if ret:
+                log(f"✅ ใช้กล้อง index {idx}")
+                return cap
+            else:
+                log(f"⚠️ กล้อง index {idx} เปิดได้แต่ไม่มีภาพ")
+        cap.release()
+
+    raise RuntimeError("ไม่พบกล้องที่ใช้งานได้เลย")
+
 # === MAIN WORK FUNCTION ===
 def execute_lift_job(job_data=None):
     """ทำงานยกเชือกและถ่ายรูป"""
@@ -134,13 +136,18 @@ def execute_lift_job(job_data=None):
             wait_for_press()
             stop_motor()
             time.sleep(3)
+
             duration_up = time.time() - start_up_time
             log(f"✅ ยกยอขึ้นเสร็จ (ใช้เวลา {duration_up:.2f} วินาที)")
 
             # === ถ่ายรูป ===
             GPIO.output(relay_pin, GPIO.LOW)
+            time.sleep(3)
             log("📷 เตรียมกล้อง...")
-            cap = cv2.VideoCapture(1)
+
+            cap = open_camera([0, 1, 2])
+            time.sleep(2)
+
             if not cap.isOpened():
                 log("❌ ไม่สามารถเปิดกล้องได้")
                 raise RuntimeError("เปิดกล้องไม่ได้")
@@ -148,19 +155,26 @@ def execute_lift_job(job_data=None):
             frame_width = int(cap.get(3))
             frame_height = int(cap.get(4))
             fps = 20.0
-
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
             video_filename = f"video_pond{POND_ID}_{timestamp}.mp4"
             image_filename = f"shrimp_pond{POND_ID}_{timestamp}.jpg"
-
             video_path = os.path.join("/home/rwb/depa", video_filename)
             image_path = os.path.join("/home/rwb/depa", image_filename)
+
             os.makedirs(os.path.dirname(video_path), exist_ok=True)
 
             log("🎥 เริ่มถ่ายวิดีโอ")
-            out = cv2.VideoWriter(video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_width, frame_height))
+            out = cv2.VideoWriter(
+                video_path,
+                cv2.VideoWriter_fourcc(*'mp4v'),
+                fps,
+                (frame_width, frame_height)
+            )
+
             start_time = time.time()
             captured_image = None
+
             stop_motor()
 
             while True:
@@ -171,18 +185,28 @@ def execute_lift_job(job_data=None):
 
                 out.write(frame)
 
+                # Capture still image at 2.5s
                 if captured_image is None and time.time() - start_time > 2.5:
                     captured_image = frame.copy()
                     cv2.imwrite(image_path, captured_image)
                     log(f"📸 ถ่ายภาพนิ่งแล้ว → {image_path}")
 
+                # Stop recording after 5s
                 if time.time() - start_time > 5:
                     log("⏱️ ครบ 5 วินาที หยุดถ่าย")
                     break
 
             out.release()
             cap.release()
+
             GPIO.output(relay_pin, GPIO.HIGH)
+
+            # === ยกยอลงเท่านั้น (ไม่ถ่ายรูป) ===
+            log("⬇️ ยกยอลง")
+            pull_down()
+            time.sleep(10)  # ยกลง 10 วินาที
+            stop_motor()
+            log("✅hihihi")
 
             # === ส่งไฟล์ไป backend ===
             result_data = {
@@ -205,12 +229,14 @@ def execute_lift_job(job_data=None):
                             ("files", (video_filename, vid_f, "video/mp4"))
                         ]
                         response = requests.post(BACKEND_URL, files=files)
+
                         if response.status_code == 200:
                             log("✅ ส่งข้อมูลสำเร็จ")
                             result_data["backend_response"] = response.json()
                         else:
                             log(f"❌ ส่งข้อมูลล้มเหลว: {response.status_code} - {response.text}")
                             result_data["backend_error"] = f"{response.status_code} - {response.text}"
+
                 except Exception as e:
                     log(f"⚠️ เกิดข้อผิดพลาดในการส่งข้อมูล: {e}")
                     result_data["backend_error"] = str(e)
@@ -219,23 +245,33 @@ def execute_lift_job(job_data=None):
                 result_data["backend_error"] = "ไม่มีภาพนิ่งจะส่ง"
 
             return result_data
+
+
             
         elif action == "lift_down":
             # === ยกยอลงเท่านั้น (ไม่ถ่ายรูป) ===
-            log("⬇️ ยกยอลง")
-            start_down_time = time.time()
-            pull_down()
-            time.sleep(5)  # ยกลง 5 วินาที
-            stop_motor()
-            duration_down = time.time() - start_down_time
-            log(f"✅ ยกยอลงเสร็จ (ใช้เวลา {duration_down:.2f} วินาที)")
+            #log("⬇️ ยกยอลง")
+            #start_down_time = time.time()
+            #pull_down()
+            #time.sleep(5)  # ยกลง 5 วินาที
+            #stop_motor()
+            #duration_down = time.time() - start_down_time
+            #log(f"✅ ยกยอลงเสร็จ (ใช้เวลา {duration_down:.2f} วินาที)")
+            
+            #return {
+            #    "status": "success",
+            #    "pond_id": POND_ID,
+            #    "action": action,
+            #    "duration": duration_down,
+            #    "timestamp": datetime.now().isoformat()
+            #}
             
             return {
                 "status": "success",
-                "pond_id": POND_ID,
-                "action": action,
-                "duration": duration_down,
-                "timestamp": datetime.now().isoformat()
+                "pond_id": 1,
+                "action": 1,
+                "duration": 1,
+                "timestamp": 1
             }
             
         else:

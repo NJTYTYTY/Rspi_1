@@ -37,6 +37,7 @@ GPIO.setup(PWM, GPIO.OUT)
 GPIO.setup(INA, GPIO.OUT)
 GPIO.setup(INB, GPIO.OUT)
 GPIO.setup(relay_pin, GPIO.OUT)
+GPIO.output(relay_pin, GPIO.HIGH)
 DISTANCE_LIMIT = 30.0  # cm (ตั้งตามที่ต้องการ)
 
 import board
@@ -78,7 +79,7 @@ def wait_for_press():
         
 start_up_time = time.time()
 pull_up()
-wait_for_press()
+#wait_for_press()
 stop_motor()
 time.sleep(3)
 duration_up = time.time() - start_up_time
@@ -86,8 +87,9 @@ log(f"✅ ยกยอขึ้นเสร็จ (ใช้เวลา {durati
 
 # === ถ่ายรูป ===
 GPIO.output(relay_pin, GPIO.LOW)
+time.sleep(3) 
 log("📷 เตรียมกล้อง...")
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 if not cap.isOpened():
     log("❌ ไม่สามารถเปิดกล้องได้")
     raise RuntimeError("เปิดกล้องไม่ได้")
