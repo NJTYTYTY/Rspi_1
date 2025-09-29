@@ -1,19 +1,20 @@
-import cv2
-import requests
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import time
-import os
-import json
-from datetime import datetime
+import requests
+import cv2
 import RPi.GPIO as GPIO
+import os
+from datetime import datetime
+from camera import open_camera
+from motor import pull_up, pull_down, stop_motor, wait_for_press
 
 # === CONFIG ===
-POND_ID = 1  # <<< ตั้งค่าหมายเลขบ่อ
-LIMIT_SWITCH_PIN = 17
-PWM = 12
-INA = 23
-INB = 24
-relay_pin = 26
-LOG_PATH = "/tmp/controller_debug.log"
+POND_ID = 1
+BACKEND_URL = "http://192.168.1.60:3000/api/pond-status/{POND_ID}"
+JOB_CHECK_INTERVAL = 5  # วินาที
+FRONT_API_URL = "https://main-two-peach.vercel.app"
 
 # 👉 เปลี่ยนเป็น URL ของ cloud app ที่ deploy บน Railway
 CLOUD_API_URL = "https://rspi1-production.up.railway.app"  # เปลี่ยนเป็น URL จริง
@@ -64,6 +65,37 @@ def wait_for_press():
 def wait_for_release():
     while GPIO.input(LIMIT_SWITCH_PIN) == 0:
         time.sleep(0.01)
+
+# === NEW: STATUS POST FUNCTION ===
+def send_status(indexStatus: int):
+    """ส่งสถานะการทำงานไปยัง Pond Status API"""
+    status_messages = {
+        1: "กำลังเริ่มยกยอขึ้น....",
+        2: "กำลังเตรียมกล้องถ่ายรูป....",
+        3: "ถ่ายสำเร็จ...",
+        4: "กรุณารอข้อมูลสักครู่...",
+        5: "สำเร็จ!!...."
+    }
+
+    message = status_messages.get(indexStatus, "Unknown status")
+
+    try:
+        response = requests.post(
+            f"{FRONT_API_URL}/api/pond-status/{POND_ID}",
+            headers={"Content-Type": "application/json"},
+            json={"status": indexStatus, "message": message},
+            timeout=5
+        )
+        if response.status_code == 200:
+            log(f"✅ ส่งสถานะ {indexStatus}: {message}")
+            return True
+        else:
+            log(f"❌ ส่งสถานะล้มเหลว {indexStatus}: {response.status_code}")
+            return False
+    except Exception as e:
+        log(f"⚠️ ไม่สามารถส่งสถานะ {indexStatus}: {e}")
+        return False
+
 
 # === CLOUD API FUNCTIONS ===
 def check_for_job():
@@ -122,6 +154,7 @@ def execute_lift_job(job_data=None):
     
     try:
         # === ยกยอขึ้น + ถ่ายรูป ===
+        send_status(1)  # ✅ กำลังเริ่มยกยอขึ้น....
         log("⬆️ ยกยอขึ้น")
         start_up_time = time.time()
         pull_up()
@@ -133,6 +166,7 @@ def execute_lift_job(job_data=None):
         log(f"✅ ยกยอขึ้นเสร็จ (ใช้เวลา {duration_up:.2f} วินาที)")
 
         # === ถ่ายรูป ===
+        send_status(2)  # ✅ กำลังเตรียมกล้องถ่ายรูป....
         GPIO.output(relay_pin, GPIO.LOW)
         time.sleep(3)
         log("📷 เตรียมกล้อง...")
@@ -181,6 +215,7 @@ def execute_lift_job(job_data=None):
             if captured_image is None and time.time() - start_time > 2.5:
                 captured_image = frame.copy()
                 cv2.imwrite(image_path, captured_image)
+                send_status(3)  # ✅ ถ่ายสำเร็จ...
                 log(f"📸 ถ่ายภาพนิ่งแล้ว → {image_path}")
 
             # Stop recording after 5s
@@ -201,6 +236,7 @@ def execute_lift_job(job_data=None):
         log("✅ ยกยอลงเสร็จ")
 
         # === ส่งไฟล์ไป backend ===
+        send_status(4)  # ✅ กรุณารอข้อมูลสักครู่...
         result_data = {
             "status": "success",
             "pond_id": POND_ID,
@@ -236,6 +272,7 @@ def execute_lift_job(job_data=None):
             log("⚠️ ไม่มีภาพนิ่งจะส่ง")
             result_data["backend_error"] = "ไม่มีภาพนิ่งจะส่ง"
 
+        send_status(5)  # ✅ สำเร็จ!!....
         return result_data
 
     except Exception as e:
