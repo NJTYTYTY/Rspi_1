@@ -7,10 +7,21 @@ import cv2
 import RPi.GPIO as GPIO
 import os
 from datetime import datetime
+import RPi.GPIO as GPIO
+import json
+import cv2
+import requests
 from camera import open_camera
 from motor import pull_up, pull_down, stop_motor, wait_for_press
 
 # === CONFIG ===
+
+LIMIT_SWITCH_PIN = 17
+PWM = 12
+INA = 23
+INB = 24
+relay_pin = 26
+LOG_PATH = "/tmp/controller_debug.log"
 POND_ID = 1
 BACKEND_URL = "http://192.168.1.60:3000/api/pond-status/{POND_ID}"
 JOB_CHECK_INTERVAL = 5  # วินาที
@@ -18,7 +29,6 @@ FRONT_API_URL = "https://main-two-peach.vercel.app"
 
 # 👉 เปลี่ยนเป็น URL ของ cloud app ที่ deploy บน Railway
 CLOUD_API_URL = "https://rspi1-production.up.railway.app"  # เปลี่ยนเป็น URL จริง
-JOB_CHECK_INTERVAL = 2  # ตรวจสอบงานทุก 10 วินาที
 
 # 👉 ใส่ ngrok URL ของ backend main.py (port 8000) สำหรับส่งไฟล์
 BACKEND_URL = "https://railwayreal555-production-5be4.up.railway.app/process"
