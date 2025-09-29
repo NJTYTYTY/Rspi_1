@@ -11,8 +11,7 @@ import RPi.GPIO as GPIO
 import json
 import cv2
 import requests
-from camera import open_camera
-from motor import pull_up, pull_down, stop_motor, wait_for_press
+
 
 # === CONFIG ===
 
